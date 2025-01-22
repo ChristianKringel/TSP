@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <time.h>
 
 #define MAX_CITIES 20
 
@@ -16,7 +17,7 @@ int calculate_path_cost(int *path, int n, int graph[MAX_CITIES][MAX_CITIES]) {
     for (int i = 0; i < n - 1; i++) {
         cost += graph[path[i]][path[i + 1]];
     }
-    cost += graph[path[n - 1]][path[0]]; // Retorno à cidade inicial
+    cost += graph[path[n - 1]][path[0]]; // retorna a cidade inicial
     return cost;
 }
 
@@ -88,23 +89,33 @@ int main(int argc, char *argv[]) {
     int *path = (int *)malloc(n * sizeof(int));
     int *best_path = (int *)malloc(n * sizeof(int));
     
-    // Inicializa o caminho com as cidades de 0 a n-1
+    
     for (int i = 0; i < n; i++) {
         path[i] = i;
     }
 
     int min_cost = INT_MAX;
     
-    // Encontra todas as permutações possíveis
-    permute(path, 0, n-1, &min_cost, best_path, n, graph);
 
-    // Imprime o resultado
+    clock_t start = clock();
+    
+
+    permute(path, 0, n-1, &min_cost, best_path, n, graph);
+    
+
+    clock_t end = clock();
+    double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+
     printf("Menor custo encontrado: %d\n", min_cost);
     printf("Melhor caminho: ");
-    for (int i = 0; i < n - 1; i++) {  // Agora só imprime até n-1
+    for (int i = 0; i < n - 1; i++) {
         printf("%d ", best_path[i]);
     }
-    printf("0\n"); // Imprime somente o retorno à cidade inicial
+    printf("0\n"); 
+    
+
+    printf("Tempo de execucao: %.6f segundos\n", cpu_time_used);
 
     free(path);
     free(best_path);
