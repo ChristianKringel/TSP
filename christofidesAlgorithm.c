@@ -6,7 +6,7 @@
 
 #define MAX 20
 
-// Estrutura para representar uma aresta
+
 typedef struct {
     int src, dest, weight;
 } Edge;
@@ -16,7 +16,7 @@ int graph[MAX][MAX];
 int edgeCount = 0;
 int tamanho = 0;
 
-// Função para ler o grafo a partir de um arquivo
+
 void readGraphFromFile(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -24,17 +24,17 @@ void readGraphFromFile(const char *filename) {
         exit(EXIT_FAILURE);
     }
 
-    // Contar número de linhas para determinar tamanho
+    
     tamanho = 0;
     char line[1024];
     while (fgets(line, sizeof(line), file) && tamanho < MAX) {
         tamanho++;
     }
 
-    // Voltar ao início do arquivo
+    
     rewind(file);
 
-    // Ler a matriz de adjacência
+    
     edgeCount = 0;
     for (int i = 0; i < tamanho; i++) {
         for (int j = 0; j < tamanho; j++) {
@@ -42,7 +42,7 @@ void readGraphFromFile(const char *filename) {
                 fprintf(stderr, "Erro ao ler valor na posição [%d][%d]\n", i, j);
                 exit(EXIT_FAILURE);
             }
-            // Adicionar aresta se for acima da diagonal principal e peso > 0
+            
             if (i < j && graph[i][j] > 0) {
                 if (edgeCount >= MAX * MAX) {
                     fprintf(stderr, "Número máximo de arestas excedido\n");
@@ -56,7 +56,7 @@ void readGraphFromFile(const char *filename) {
     fclose(file);
     
 }
-// Funções auxiliares para o algoritmo de Kruskal
+// Funcs auxiliares para o algoritmo de Kruskal
 int find(int parent[], int i) {
     if (parent[i] == i) {
         return i;
@@ -99,7 +99,7 @@ void kruskal(Edge result[], int *mstEdgeCount) {
     // Ordenar as arestas por peso
     qsort(edges, edgeCount, sizeof(Edge), compareEdges);
 
-    // Construir a MST
+    // Constroi a MST
     while (e < tamanho - 1 && i < edgeCount) {
         Edge nextEdge = edges[i++];
 
@@ -115,7 +115,7 @@ void kruskal(Edge result[], int *mstEdgeCount) {
     *mstEdgeCount = e;
 }
 
-// Identificar vértices de grau ímpar
+// Identificar vertices de grau impar
 void findOddDegreeVertices(int mst[MAX][MAX], int oddVertices[], int *oddCount) {
     int degree[MAX] = {0};
 
@@ -135,7 +135,7 @@ void findOddDegreeVertices(int mst[MAX][MAX], int oddVertices[], int *oddCount) 
     }
 }
 
-// Encontrar emparelhamento mínimo de vértices de grau ímpar
+// Encontrar emparelhamento mínimo de vertices de grau impar
 void findMinimumMatching(int oddVertices[], int oddCount, int mst[MAX][MAX]) {
     bool matched[MAX] = {false};
 
@@ -166,7 +166,7 @@ void findEulerianCircuit(int mst[MAX][MAX], int start, int circuit[], int *circu
     int current = start;
     *circuitSize = 0;
 
-    // Criar uma cópia do grafo
+    
     int tempGraph[MAX][MAX];
     for (int i = 0; i < tamanho; i++) {
         for (int j = 0; j < tamanho; j++) {
@@ -174,13 +174,13 @@ void findEulerianCircuit(int mst[MAX][MAX], int start, int circuit[], int *circu
         }
     }
 
-    // Empilhar o vértice inicial
+    
     stack[++top] = current;
 
     while (top >= 0) {
         current = stack[top];
         
-        // Procurar próxima aresta não utilizada
+        
         int next = -1;
         for (int i = 0; i < tamanho; i++) {
             if (tempGraph[current][i] > 0) {
@@ -190,13 +190,13 @@ void findEulerianCircuit(int mst[MAX][MAX], int start, int circuit[], int *circu
         }
 
         if (next != -1) {
-            // Se encontrou uma aresta, empilha o próximo vértice
+            
             stack[++top] = next;
-            // Remove a aresta do grafo temporário
+           
             tempGraph[current][next] = 0;
             tempGraph[next][current] = 0;
         } else {
-            // Se não há mais arestas, adiciona o vértice ao circuito
+           
             circuit[(*circuitSize)++] = stack[top--];
         }
     }
@@ -209,7 +209,7 @@ void eulerianToHamiltonian(int circuit[], int circuitSize) {
     int pathSize = 0;
     int totalCost = 0;
 
-    // Construir caminho hamiltoniano
+    
     for (int i = 0; i < circuitSize; i++) {
         if (!visited[circuit[i]]) {
             hamiltonianPath[pathSize++] = circuit[i];
@@ -217,10 +217,10 @@ void eulerianToHamiltonian(int circuit[], int circuitSize) {
         }
     }
 
-    // Adicionar o vértice inicial para fechar o ciclo
+    
     hamiltonianPath[pathSize++] = hamiltonianPath[0];
 
-    // Calcular custo total
+    
     for (int i = 0; i < pathSize - 1; i++) {
         totalCost += graph[hamiltonianPath[i]][hamiltonianPath[i + 1]];
     }
@@ -270,16 +270,16 @@ int main(int argc, char *argv[]) {
     }
     printf("Arquivo de entrada: %s\n", argv[1]);    
 
-    // Início da medição
+
     inicio = clock();
 
-    // Ler o grafo a partir do arquivo
+   
     readGraphFromFile(argv[1]);
 
-    // Executar o algoritmo de Christofides
+    
     christofides();
 
-    // Fim da medição
+    
     fim = clock();
     tempo_execucao = ((double) (fim - inicio)) / CLOCKS_PER_SEC;
     printf("\nTempo de execucao: %f segundos\n", tempo_execucao);
