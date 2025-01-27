@@ -119,7 +119,6 @@ void generatePermutations(int *numbers, int start, int n, int **matrix, int *pat
 {
     if (start == n)
     {
-        // Adicione esta verificação
         if (numbers[0] == 0)
         {
             int temp_size_path = calculatePath(numbers, matrix, n);

@@ -4,8 +4,7 @@
 #include <limits.h>
 #include <time.h>
 
-#define MAX 20
-
+#define MAX 30
 
 typedef struct {
     int src, dest, weight;
@@ -16,24 +15,20 @@ int graph[MAX][MAX];
 int edgeCount = 0;
 int tamanho = 0;
 
-
 void readGraphFromFile(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         fprintf(stderr, "Erro ao abrir o arquivo %s\n", filename);
         exit(EXIT_FAILURE);
     }
-
     
     tamanho = 0;
     char line[1024];
     while (fgets(line, sizeof(line), file) && tamanho < MAX) {
         tamanho++;
     }
-
     
     rewind(file);
-
     
     edgeCount = 0;
     for (int i = 0; i < tamanho; i++) {
@@ -44,219 +39,250 @@ void readGraphFromFile(const char *filename) {
             }
             
             if (i < j && graph[i][j] > 0) {
-                if (edgeCount >= MAX * MAX) {
-                    fprintf(stderr, "Número máximo de arestas excedido\n");
-                    exit(EXIT_FAILURE);
-                }
                 edges[edgeCount++] = (Edge){i, j, graph[i][j]};
             }
         }
     }
-
     fclose(file);
-    
-}
-// Funcs auxiliares para o algoritmo de Kruskal
-int find(int parent[], int i) {
-    if (parent[i] == i) {
-        return i;
-    }
-    return find(parent, parent[i]);
 }
 
-void unionSets(int parent[], int rank[], int x, int y) {
+int find(int parent[], int i) {
+    if (parent[i] == i)
+        return i;
+    return parent[i] = find(parent, parent[i]);
+}
+
+void unionSet(int parent[], int rank[], int x, int y) {
     int rootX = find(parent, x);
     int rootY = find(parent, y);
-
-    if (rank[rootX] < rank[rootY]) {
+    
+    if (rank[rootX] < rank[rootY])
         parent[rootX] = rootY;
-    } else if (rank[rootX] > rank[rootY]) {
+    else if (rank[rootX] > rank[rootY])
         parent[rootY] = rootX;
-    } else {
+    else {
         parent[rootY] = rootX;
         rank[rootX]++;
     }
 }
 
 int compareEdges(const void *a, const void *b) {
-    Edge *edgeA = (Edge *)a;
-    Edge *edgeB = (Edge *)b;
-    return edgeA->weight - edgeB->weight;
+    return ((Edge*)a)->weight - ((Edge*)b)->weight;
 }
 
-// Algoritmo de Kruskal para encontrar a MST
 void kruskal(Edge result[], int *mstEdgeCount) {
     int parent[MAX], rank[MAX];
-    int e = 0; // Contador para arestas na MST
-    int i = 0; // Contador para arestas ordenadas
-
-    // Inicializar os conjuntos
-    for (int v = 0; v < tamanho; v++) {
-        parent[v] = v;
-        rank[v] = 0;
+    
+    for (int i = 0; i < tamanho; i++) {
+        parent[i] = i;
+        rank[i] = 0;
     }
-
-    // Ordenar as arestas por peso
+    
     qsort(edges, edgeCount, sizeof(Edge), compareEdges);
-
-    // Constroi a MST
-    while (e < tamanho - 1 && i < edgeCount) {
-        Edge nextEdge = edges[i++];
-
+    
+    *mstEdgeCount = 0;
+    int e = 0;
+    
+    while (*mstEdgeCount < tamanho - 1 && e < edgeCount) {
+        Edge nextEdge = edges[e++];
         int x = find(parent, nextEdge.src);
         int y = find(parent, nextEdge.dest);
-
+        
         if (x != y) {
-            result[e++] = nextEdge;
-            unionSets(parent, rank, x, y);
+            result[(*mstEdgeCount)++] = nextEdge;
+            unionSet(parent, rank, x, y);
         }
     }
-
-    *mstEdgeCount = e;
 }
 
-// Identificar vertices de grau impar
 void findOddDegreeVertices(int mst[MAX][MAX], int oddVertices[], int *oddCount) {
     int degree[MAX] = {0};
-
+    *oddCount = 0;
+    
     for (int i = 0; i < tamanho; i++) {
         for (int j = 0; j < tamanho; j++) {
-            if (mst[i][j] != 0) {
+            if (mst[i][j] > 0)
                 degree[i]++;
-            }
         }
-    }
-
-    *oddCount = 0;
-    for (int i = 0; i < tamanho; i++) {
-        if (degree[i] % 2 != 0) {
+        if (degree[i] % 2 != 0)
             oddVertices[(*oddCount)++] = i;
-        }
     }
 }
 
-// Encontrar emparelhamento mínimo de vertices de grau impar
-void findMinimumMatching(int oddVertices[], int oddCount, int mst[MAX][MAX]) {
-    bool matched[MAX] = {false};
+typedef struct {
+    int v1, v2;
+    int weight;
+} MatchPair;
 
-    for (int i = 0; i < oddCount; i++) {
-        if (!matched[oddVertices[i]]) {
-            int minWeight = INT_MAX, minIndex = -1;
-
-            for (int j = i + 1; j < oddCount; j++) {
-                if (!matched[oddVertices[j]] && graph[oddVertices[i]][oddVertices[j]] < minWeight) {
-                    minWeight = graph[oddVertices[i]][oddVertices[j]];
-                    minIndex = j;
-                }
-            }
-
-            if (minIndex != -1) {
-                mst[oddVertices[i]][oddVertices[minIndex]] = graph[oddVertices[i]][oddVertices[minIndex]];
-                mst[oddVertices[minIndex]][oddVertices[i]] = graph[oddVertices[minIndex]][oddVertices[i]];
-                matched[oddVertices[i]] = true;
-                matched[oddVertices[minIndex]] = true;
-            }
-        }
-    }
+int compareMatchPairs(const void *a, const void *b) {
+    return ((MatchPair*)a)->weight - ((MatchPair*)b)->weight;
 }
 
-// Encontrar um circuito Euleriano
-void findEulerianCircuit(int mst[MAX][MAX], int start, int circuit[], int *circuitSize) {
-    int stack[MAX], top = -1;
-    int current = start;
-    *circuitSize = 0;
-
+void findMinimumWeightMatching(int oddVertices[], int oddCount, int mst[MAX][MAX]) {
+    if (oddCount == 0) return;
     
-    int tempGraph[MAX][MAX];
+    MatchPair *pairs = malloc(oddCount * oddCount * sizeof(MatchPair));
+    int pairCount = 0;
+    bool *matched = calloc(oddCount, sizeof(bool));
+    
+    // Criar todos os possíveis pares
+    for (int i = 0; i < oddCount; i++) {
+        for (int j = i + 1; j < oddCount; j++) {
+            pairs[pairCount].v1 = oddVertices[i];
+            pairs[pairCount].v2 = oddVertices[j];
+            pairs[pairCount].weight = graph[oddVertices[i]][oddVertices[j]];
+            pairCount++;
+        }
+    }
+    
+    // Ordenar pares por peso
+    qsort(pairs, pairCount, sizeof(MatchPair), compareMatchPairs);
+    
+    // Selecionar o melhor matching
+    int matchCount = 0;
+    for (int i = 0; i < pairCount && matchCount < oddCount/2; i++) {
+        int idx1 = -1, idx2 = -1;
+        
+        // Encontrar índices dos vértices no array oddVertices
+        for (int j = 0; j < oddCount; j++) {
+            if (oddVertices[j] == pairs[i].v1) idx1 = j;
+            if (oddVertices[j] == pairs[i].v2) idx2 = j;
+        }
+        
+        if (!matched[idx1] && !matched[idx2]) {
+            mst[pairs[i].v1][pairs[i].v2] = pairs[i].weight;
+            mst[pairs[i].v2][pairs[i].v1] = pairs[i].weight;
+            matched[idx1] = matched[idx2] = true;
+            matchCount++;
+        }
+    }
+    
+    free(pairs);
+    free(matched);
+}
+
+void findEulerianCircuit(int mst[MAX][MAX], int start, int circuit[], int *circuitSize) {
+    int *stack = malloc(MAX * MAX * sizeof(int));
+    int top = -1;
+    *circuitSize = 0;
+    
+    int **tempGraph = malloc(tamanho * sizeof(int*));
     for (int i = 0; i < tamanho; i++) {
+        tempGraph[i] = malloc(tamanho * sizeof(int));
         for (int j = 0; j < tamanho; j++) {
             tempGraph[i][j] = mst[i][j];
         }
     }
-
     
-    stack[++top] = current;
-
+    stack[++top] = start;
+    
     while (top >= 0) {
-        current = stack[top];
-        
-        
+        int current = stack[top];
         int next = -1;
+        int minWeight = INT_MAX;
+        
+        // Encontrar próxima aresta não visitada de menor peso
         for (int i = 0; i < tamanho; i++) {
-            if (tempGraph[current][i] > 0) {
+            if (tempGraph[current][i] > 0 && tempGraph[current][i] < minWeight) {
+                minWeight = tempGraph[current][i];
                 next = i;
-                break;
             }
         }
-
+        
         if (next != -1) {
-            
             stack[++top] = next;
-           
-            tempGraph[current][next] = 0;
-            tempGraph[next][current] = 0;
+            tempGraph[current][next] = tempGraph[next][current] = 0;
         } else {
-           
             circuit[(*circuitSize)++] = stack[top--];
         }
     }
+    
+    for (int i = 0; i < tamanho; i++)
+        free(tempGraph[i]);
+    free(tempGraph);
+    free(stack);
 }
 
-// Converter circuito Euleriano em circuito Hamiltoniano
-void eulerianToHamiltonian(int circuit[], int circuitSize) {
-    bool visited[MAX] = {false};
-    int hamiltonianPath[MAX];
-    int pathSize = 0;
-    int totalCost = 0;
+void optimizeHamiltonianPath(int path[], int pathSize) {
+    bool improved;
+    do {
+        improved = false;
+        for (int i = 0; i < pathSize - 2; i++) {
+            for (int j = i + 2; j < pathSize - 1; j++) {
+                int currentCost = graph[path[i]][path[i+1]] + graph[path[j]][path[j+1]];
+                int newCost = graph[path[i]][path[j]] + graph[path[i+1]][path[j+1]];
+                
+                if (newCost < currentCost) {
+                    // Reverter o segmento do caminho
+                    for (int k = 0; k < (j - i) / 2; k++) {
+                        int temp = path[i + 1 + k];
+                        path[i + 1 + k] = path[j - k];
+                        path[j - k] = temp;
+                    }
+                    improved = true;
+                }
+            }
+        }
+    } while (improved);
+}
 
+void eulerianToHamiltonian(int circuit[], int circuitSize) {
+    bool *visited = calloc(tamanho, sizeof(bool));
+    int *hamiltonianPath = malloc((tamanho + 1) * sizeof(int));
+    int pathSize = 0;
     
+    // Construir caminho hamiltoniano
     for (int i = 0; i < circuitSize; i++) {
         if (!visited[circuit[i]]) {
             hamiltonianPath[pathSize++] = circuit[i];
             visited[circuit[i]] = true;
         }
     }
-
+    hamiltonianPath[pathSize++] = hamiltonianPath[0];  // Fechar o ciclo
     
-    hamiltonianPath[pathSize++] = hamiltonianPath[0];
-
+    // Otimizar o caminho
+    optimizeHamiltonianPath(hamiltonianPath, pathSize);
     
+    // Calcular e imprimir o custo total
+    int totalCost = 0;
     for (int i = 0; i < pathSize - 1; i++) {
         totalCost += graph[hamiltonianPath[i]][hamiltonianPath[i + 1]];
     }
-
+    
     printf("\nCaminho aproximado do Caixeiro Viajante:\n");
     for (int i = 0; i < pathSize; i++) {
         printf("%d ", hamiltonianPath[i]);
     }
     printf("\nCusto total: %d\n", totalCost);
+    
+    free(visited);
+    free(hamiltonianPath);
 }
 
-// Algoritmo de Christofides
 void christofides() {
-    Edge mstEdges[MAX];
+    Edge mstEdges[MAX * MAX];
     int mstEdgeCount;
     int mst[MAX][MAX] = {0};
-
-    // Etapa 1: Encontrar a MST
+    
+    // Encontrar MST
     kruskal(mstEdges, &mstEdgeCount);
     for (int i = 0; i < mstEdgeCount; i++) {
         mst[mstEdges[i].src][mstEdges[i].dest] = mstEdges[i].weight;
         mst[mstEdges[i].dest][mstEdges[i].src] = mstEdges[i].weight;
     }
-
-    // Etapa 2: Identificar vértices de grau ímpar
+    
+    // Encontrar vértices de grau ímpar
     int oddVertices[MAX], oddCount;
     findOddDegreeVertices(mst, oddVertices, &oddCount);
-
-    // Etapa 3: Encontrar emparelhamento mínimo
-    findMinimumMatching(oddVertices, oddCount, mst);
-
-    // Etapa 4: Encontrar um circuito Euleriano
+    
+    // Encontrar matching mínimo para vértices de grau ímpar
+    findMinimumWeightMatching(oddVertices, oddCount, mst);
+    
+    // Encontrar circuito euleriano
     int circuit[MAX * MAX], circuitSize;
     findEulerianCircuit(mst, 0, circuit, &circuitSize);
-
-    // Etapa 5: Converter para circuito Hamiltoniano
+    
+    // Converter para circuito hamiltoniano
     eulerianToHamiltonian(circuit, circuitSize);
 }
 
@@ -268,21 +294,16 @@ int main(int argc, char *argv[]) {
         printf("Uso: %s <arquivo_entrada>\n", argv[0]);
         return 1;
     }
-    printf("Arquivo de entrada: %s\n", argv[1]);    
-
-
+    
+    printf("Arquivo de entrada: %s\n", argv[1]);
+    
     inicio = clock();
-
-   
     readGraphFromFile(argv[1]);
-
-    
     christofides();
-
-    
     fim = clock();
+    
     tempo_execucao = ((double) (fim - inicio)) / CLOCKS_PER_SEC;
     printf("\nTempo de execucao: %f segundos\n", tempo_execucao);
-
+    
     return 0;
 }
