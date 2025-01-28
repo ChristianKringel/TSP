@@ -26,7 +26,7 @@ Para executar a versão Python do algoritmo, siga os passos abaixo:
 2. Execute o script passando o arquivo de entrada desejado. Exemplo:
 
 ```bash
-python tsp_solver.py tsp1_253
+python bruteForce.py tsp1_253
 ```
 
 3. O resultado será exibido no terminal, incluindo o custo do caminho e o melhor caminho encontrado.
