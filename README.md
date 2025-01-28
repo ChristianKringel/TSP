@@ -94,7 +94,7 @@ A abordagem aproximativa implementada utiliza o **Algoritmo de Christofides**. E
 
 1. **CLRS** - Cormen, T. H., Leiserson, C. E., Rivest, R. L., & Stein, C. (2009). *Introduction to Algorithms* (3rd ed.). MIT Press.
 2. **Wikipedia** - Travelling Salesperson Problem: [https://en.wikipedia.org/wiki/Travelling_salesman_problem](https://en.wikipedia.org/wiki/Travelling_salesman_problem)
-3. **GeeksforGeeks** - Christofides Algorithm: [https://www.geeksforgeeks.org](https://www.geeksforgeeks.org)
+3. **Alon Krymgand** - Approximating the Metric TSP Problem: An Introduction to Combinatorial Optimization: [https://alon.kr/posts/christofides](https://alon.kr/posts/christofides)
 
 ---
 
